@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Contrasting Images App</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(45deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
+
+        .header p {
+            opacity: 0.9;
+            font-size: 1.1rem;
+        }
+
+        .controls {
+            padding: 30px;
+            text-align: center;
+            background: #f8f9ff;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .btn {
+            background: linear-gradient(45deg, #ff6b6b, #ee5a52);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 1rem;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 600;
+            margin: 5px;
+            box-shadow: 0 4px 15px rgba(255, 107, 107, 0.4);
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(255, 107, 107, 0.6);
+        }
+
+        .btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .images-container {
+            display: flex;
+            min-height: 500px;
+        }
+
+        .image-panel {
+            flex: 1;
+            padding: 30px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .image-panel:first-child {
+            border-right: 3px solid #e2e8f0;
+            background: linear-gradient(135deg, #ffeef8 0%, #f0f4ff 100%);
+        }
+
+        .image-panel:last-child {
+            background: linear-gradient(135deg, #f0f4ff 0%, #ffeef8 100%);
+        }
+
+        .image-wrapper {
+            width: 100%;
+            max-width: 350px;
+            aspect-ratio: 1;
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+            transition: transform 0.3s ease;
+        }
+
+        .image-wrapper:hover {
+            transform: scale(1.02);
+        }
+
+        .image-wrapper img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: opacity 0.3s ease;
+        }
+
+        .image-label {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            padding: 12px 24px;
+            border-radius: 25px;
+            font-weight: 600;
+            text-transform: capitalize;
+            font-size: 1.1rem;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+            text-align: center;
+        }
+
+        .status {
+            background: #e6fffa;
+            color: #234e52;
+            padding: 15px;
+            margin: 20px;
+            border-radius: 10px;
+            text-align: center;
+            font-weight: 500;
+        }
+
+        .loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 200px;
+            font-size: 1.2rem;
+            color: #667eea;
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid #e2e8f0;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 15px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @media (max-width: 768px) {
+            .images-container {
+                flex-direction: column;
+            }
+
+            .image-panel:first-child {
+                border-right: none;
+                border-bottom: 3px solid #e2e8f0;
+            }
+
+            .header h1 {
+                font-size: 2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🖼️ Real API Images</h1>
+            <p>Contrasting labeled images from actual APIs</p>
+        </div>
+
+        <div class="controls">
+            <button id="contrastBtn" class="btn">Load Contrasting Images</button>
+            <button id="randomBtn" class="btn">Random Pair</button>
+            <button id="dogsBtn" class="btn">Dogs vs Objects</button>
+        </div>
+
+        <div class="status" id="statusDiv">
+            Ready to load real images from APIs!
+        </div>
+
+        <div class="images-container" id="imagesContainer">
+            <div class="image-panel">
+                <div style="color: #a0aec0; font-size: 1.2rem; text-align: center;">
+                    Click any button to load images
+                </div>
+            </div>
+            <div class="image-panel">
+                <div style="color: #a0aec0; font-size: 1.2rem; text-align: center;">
+                    Second image will appear here
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        class ImageApp {
+            constructor() {
+                this.contrastBtn = document.getElementById('contrastBtn');
+                this.randomBtn = document.getElementById('randomBtn');
+                this.dogsBtn = document.getElementById('dogsBtn');
+                this.statusDiv = document.getElementById('statusDiv');
+                this.imagesContainer = document.getElementById('imagesContainer');
+                
+                this.init();
+            }
+
+            init() {
+                this.contrastBtn.addEventListener('click', () => this.loadContrastingImages());
+                this.randomBtn.addEventListener('click', () => this.loadRandomImages());
+                this.dogsBtn.addEventListener('click', () => this.loadDogsVsObjects());
+            }
+
+            updateStatus(message, isError = false) {
+                this.statusDiv.textContent = message;
+                this.statusDiv.style.background = isError ? '#fed7d7' : '#e6fffa';
+                this.statusDiv.style.color = isError ? '#e53e3e' : '#234e52';
+            }
+
+            showLoading() {
+                this.imagesContainer.innerHTML = `
+                    <div class="image-panel">
+                        <div class="loading">
+                            <div class="spinner"></div>
+                            Fetching from API...
+                        </div>
+                    </div>
+                    <div class="image-panel">
+                        <div class="loading">
+                            <div class="spinner"></div>
+                            Loading second image...
+                        </div>
+                    </div>
+                `;
+            }
+
+            async makeAPICall(endpoint) {
+                try {
+                    const response = await fetch(`/api/${endpoint}`);
+                    const data = await response.json();
+                    
+                    if (!data.success) {
+                        throw new Error(data.error || 'API call failed');
+                    }
+                    
+                    return data;
+                } catch (error) {
+                    console.error('API Error:', error);
+                    throw error;
+                }
+            }
+
+            async loadContrastingImages() {
+                this.setButtonsState(true);
+                this.updateStatus('Loading contrasting images...');
+                this.showLoading();
+                
+                try {
+                    const data = await this.makeAPICall('contrasting-images');
+                    this.displayImages(data.images);
+                    this.updateStatus(`✅ Loaded contrasting images: ${data.categories.join(' vs ')}`);
+                } catch (error) {
+                    this.updateStatus('Failed to load contrasting images', true);
+                } finally {
+                    this.setButtonsState(false);
+                }
+            }
+
+            async loadRandomImages() {
+                this.setButtonsState(true);
+                this.updateStatus('Loading random images...');
+                this.showLoading();
+                
+                try {
+                    const data = await this.makeAPICall('random-images');
+                    this.displayImages(data.images);
+                    this.updateStatus(`🎲 Loaded random pair: ${data.images.map(img => img.label).join(' vs ')}`);
+                } catch (error) {
+                    this.updateStatus('Failed to load random images', true);
+                } finally {
+                    this.setButtonsState(false);
+                }
+            }
+
+            async loadDogsVsObjects() {
+                this.setButtonsState(true);
+                this.updateStatus('Loading dogs vs objects...');
+                this.showLoading();
+                
+                try {
+                    const data = await this.makeAPICall('dogs-vs-objects');
+                    this.displayImages(data.images);
+                    this.updateStatus(`🐕 vs 📱 Dogs vs Objects loaded!`);
+                } catch (error) {
+                    this.updateStatus('Failed to load dogs vs objects', true);
+                } finally {
+                    this.setButtonsState(false);
+                }
+            }
+
+            displayImages(images) {
+                this.imagesContainer.innerHTML = `
+                    <div class="image-panel">
+                        <div class="image-wrapper">
+                            <img src="${images[0].url}" alt="${images[0].label}" 
+                                 onerror="this.src='https://via.placeholder.com/400x400/FF6B6B/white?text=${encodeURIComponent(images[0].label)}'">
+                        </div>
+                        <div class="image-label">${images[0].label}</div>
+                    </div>
+                    <div class="image-panel">
+                        <div class="image-wrapper">
+                            <img src="${images[1].url}" alt="${images[1].label}"
+                                 onerror="this.src='https://via.placeholder.com/400x400/4ECDC4/white?text=${encodeURIComponent(images[1].label)}'">
+                        </div>
+                        <div class="image-label">${images[1].label}</div>
+                    </div>
+                `;
+            }
+
+            setButtonsState(disabled) {
+                this.contrastBtn.disabled = disabled;
+                this.randomBtn.disabled = disabled;
+                this.dogsBtn.disabled = disabled;
+            }
+        }
+
+        // Initialize when page loads
+        window.addEventListener('DOMContentLoaded', () => {
+            new ImageApp();
+        });
+    </script>
+</body>
+</html>
