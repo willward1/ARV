@@ -2,17 +2,11 @@
   "name": "contrasting-images-app",
   "version": "1.0.0",
   "description": "Simple app that loads contrasting labeled images from APIs",
-  "main": "server.js",
-  "type": "module",
+  "main": "index.js",
   "scripts": {
-    "start": "node server.js",
-    "dev": "node server.js"
+    "build": "echo 'Build complete'"
   },
-  "dependencies": {
-    "express": "^4.18.2",
-    "node-fetch": "^3.3.2",
-    "cors": "^2.8.5"
-  },
+  "dependencies": {},
   "engines": {
     "node": ">=16.0.0"
   }
