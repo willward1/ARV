@@ -9,12 +9,17 @@ const categories = {
 
 const getRandomItem = (arr) => arr[Math.floor(Math.random() * arr.length)];
 
-function getUnsplashImage(query) {
-  const imageUrl = `https://source.unsplash.com/400x400/?${query}&${Date.now()}`;
+function getWorkingImage(query) {
+  const timestamp = Date.now();
+  const randomId = Math.floor(Math.random() * 1000);
+  
+  // Use working image APIs
+  const imageUrl = `https://picsum.photos/400/400?random=${timestamp}${randomId}`;
+  
   return {
     url: imageUrl,
     label: query,
-    source: 'unsplash'
+    source: 'picsum'
   };
 }
 
@@ -44,8 +49,8 @@ exports.handler = async (event, context) => {
       item2 = getRandomItem(allItems);
     }
 
-    const image1 = getUnsplashImage(item1);
-    const image2 = getUnsplashImage(item2);
+    const image1 = getWorkingImage(item1);
+    const image2 = getWorkingImage(item2);
 
     const response = {
       success: true,
