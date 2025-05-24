@@ -56,19 +56,20 @@
             background: linear-gradient(45deg, #ff6b6b, #ee5a52);
             color: white;
             border: none;
-            padding: 15px 30px;
-            font-size: 1rem;
+            padding: 20px 50px;
+            font-size: 1.2rem;
             border-radius: 50px;
             cursor: pointer;
             transition: all 0.3s ease;
             font-weight: 600;
-            margin: 5px;
-            box-shadow: 0 4px 15px rgba(255, 107, 107, 0.4);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            box-shadow: 0 6px 20px rgba(255, 107, 107, 0.4);
         }
 
         .btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 25px rgba(255, 107, 107, 0.6);
+            transform: translateY(-3px);
+            box-shadow: 0 10px 30px rgba(255, 107, 107, 0.6);
         }
 
         .btn:disabled {
@@ -169,6 +170,12 @@
             100% { transform: rotate(360deg); }
         }
 
+        .placeholder {
+            color: #a0aec0;
+            font-size: 1.2rem;
+            text-align: center;
+        }
+
         @media (max-width: 768px) {
             .images-container {
                 flex-direction: column;
@@ -188,50 +195,36 @@
 <body>
     <div class="container">
         <div class="header">
-            <h1>🖼️ Real API Images</h1>
-            <p>Contrasting labeled images from actual APIs</p>
+            <h1>🖼️ Contrasting Images</h1>
+            <p>One button, two perfectly labeled contrasting images</p>
         </div>
 
         <div class="controls">
-            <button id="contrastBtn" class="btn">Load Contrasting Images</button>
-            <button id="randomBtn" class="btn">Random Pair</button>
-            <button id="dogsBtn" class="btn">Dogs vs Objects</button>
+            <button id="loadBtn" class="btn">Load Contrasting Images</button>
         </div>
 
         <div class="status" id="statusDiv">
-            Ready to load real images from APIs!
+            Click the button to load two contrasting labeled images!
         </div>
 
         <div class="images-container" id="imagesContainer">
             <div class="image-panel">
-                <div style="color: #a0aec0; font-size: 1.2rem; text-align: center;">
-                    Click any button to load images
-                </div>
+                <div class="placeholder">First image will appear here</div>
             </div>
             <div class="image-panel">
-                <div style="color: #a0aec0; font-size: 1.2rem; text-align: center;">
-                    Second image will appear here
-                </div>
+                <div class="placeholder">Second contrasting image will appear here</div>
             </div>
         </div>
     </div>
 
     <script>
-        class ImageApp {
+        class SimpleImageApp {
             constructor() {
-                this.contrastBtn = document.getElementById('contrastBtn');
-                this.randomBtn = document.getElementById('randomBtn');
-                this.dogsBtn = document.getElementById('dogsBtn');
+                this.loadBtn = document.getElementById('loadBtn');
                 this.statusDiv = document.getElementById('statusDiv');
                 this.imagesContainer = document.getElementById('imagesContainer');
                 
-                this.init();
-            }
-
-            init() {
-                this.contrastBtn.addEventListener('click', () => this.loadContrastingImages());
-                this.randomBtn.addEventListener('click', () => this.loadRandomImages());
-                this.dogsBtn.addEventListener('click', () => this.loadDogsVsObjects());
+                this.loadBtn.addEventListener('click', () => this.loadImages());
             }
 
             updateStatus(message, isError = false) {
@@ -245,7 +238,7 @@
                     <div class="image-panel">
                         <div class="loading">
                             <div class="spinner"></div>
-                            Fetching from API...
+                            Loading first image...
                         </div>
                     </div>
                     <div class="image-panel">
@@ -257,67 +250,26 @@
                 `;
             }
 
-            async makeAPICall(endpoint) {
-                try {
-                    const response = await fetch(`/api/${endpoint}`);
-                    const data = await response.json();
-                    
-                    if (!data.success) {
-                        throw new Error(data.error || 'API call failed');
-                    }
-                    
-                    return data;
-                } catch (error) {
-                    console.error('API Error:', error);
-                    throw error;
-                }
-            }
-
-            async loadContrastingImages() {
-                this.setButtonsState(true);
+            async loadImages() {
+                this.loadBtn.disabled = true;
                 this.updateStatus('Loading contrasting images...');
                 this.showLoading();
                 
                 try {
-                    const data = await this.makeAPICall('contrasting-images');
+                    const response = await fetch('/api/load-images');
+                    const data = await response.json();
+                    
+                    if (!data.success) {
+                        throw new Error(data.error || 'Failed to load images');
+                    }
+                    
                     this.displayImages(data.images);
-                    this.updateStatus(`✅ Loaded contrasting images: ${data.categories.join(' vs ')}`);
+                    this.updateStatus(`✅ Loaded: ${data.images[0].label} vs ${data.images[1].label} (${data.categories.join(' vs ')})`);
                 } catch (error) {
-                    this.updateStatus('Failed to load contrasting images', true);
+                    this.updateStatus('Failed to load images', true);
+                    console.error('Error:', error);
                 } finally {
-                    this.setButtonsState(false);
-                }
-            }
-
-            async loadRandomImages() {
-                this.setButtonsState(true);
-                this.updateStatus('Loading random images...');
-                this.showLoading();
-                
-                try {
-                    const data = await this.makeAPICall('random-images');
-                    this.displayImages(data.images);
-                    this.updateStatus(`🎲 Loaded random pair: ${data.images.map(img => img.label).join(' vs ')}`);
-                } catch (error) {
-                    this.updateStatus('Failed to load random images', true);
-                } finally {
-                    this.setButtonsState(false);
-                }
-            }
-
-            async loadDogsVsObjects() {
-                this.setButtonsState(true);
-                this.updateStatus('Loading dogs vs objects...');
-                this.showLoading();
-                
-                try {
-                    const data = await this.makeAPICall('dogs-vs-objects');
-                    this.displayImages(data.images);
-                    this.updateStatus(`🐕 vs 📱 Dogs vs Objects loaded!`);
-                } catch (error) {
-                    this.updateStatus('Failed to load dogs vs objects', true);
-                } finally {
-                    this.setButtonsState(false);
+                    this.loadBtn.disabled = false;
                 }
             }
 
@@ -325,31 +277,23 @@
                 this.imagesContainer.innerHTML = `
                     <div class="image-panel">
                         <div class="image-wrapper">
-                            <img src="${images[0].url}" alt="${images[0].label}" 
-                                 onerror="this.src='https://via.placeholder.com/400x400/FF6B6B/white?text=${encodeURIComponent(images[0].label)}'">
+                            <img src="${images[0].url}" alt="${images[0].label}">
                         </div>
                         <div class="image-label">${images[0].label}</div>
                     </div>
                     <div class="image-panel">
                         <div class="image-wrapper">
-                            <img src="${images[1].url}" alt="${images[1].label}"
-                                 onerror="this.src='https://via.placeholder.com/400x400/4ECDC4/white?text=${encodeURIComponent(images[1].label)}'">
+                            <img src="${images[1].url}" alt="${images[1].label}">
                         </div>
                         <div class="image-label">${images[1].label}</div>
                     </div>
                 `;
             }
-
-            setButtonsState(disabled) {
-                this.contrastBtn.disabled = disabled;
-                this.randomBtn.disabled = disabled;
-                this.dogsBtn.disabled = disabled;
-            }
         }
 
         // Initialize when page loads
         window.addEventListener('DOMContentLoaded', () => {
-            new ImageApp();
+            new SimpleImageApp();
         });
     </script>
 </body>
