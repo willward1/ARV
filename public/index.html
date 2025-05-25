@@ -277,13 +277,15 @@
                 this.imagesContainer.innerHTML = `
                     <div class="image-panel">
                         <div class="image-wrapper">
-                            <img src="${images[0].url}" alt="${images[0].label}">
+                            <img src="${images[0].url}" alt="${images[0].label}" 
+                                 onerror="this.onerror=null; this.src='https://placehold.co/400x400/FF6B6B/white?text=${encodeURIComponent(images[0].label)}'">
                         </div>
                         <div class="image-label">${images[0].label}</div>
                     </div>
                     <div class="image-panel">
                         <div class="image-wrapper">
-                            <img src="${images[1].url}" alt="${images[1].label}">
+                            <img src="${images[1].url}" alt="${images[1].label}"
+                                 onerror="this.onerror=null; this.src='https://placehold.co/400x400/4ECDC4/white?text=${encodeURIComponent(images[1].label)}'">
                         </div>
                         <div class="image-label">${images[1].label}</div>
                     </div>
