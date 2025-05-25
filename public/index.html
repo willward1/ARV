@@ -51,13 +51,6 @@
             border-radius: 8px;
         }
         
-        .label {
-            margin-top: 10px;
-            font-size: 18px;
-            font-weight: bold;
-            text-transform: capitalize;
-        }
-        
         @media (max-width: 600px) {
             .images {
                 flex-direction: column;
@@ -68,7 +61,7 @@
 </head>
 <body>
     <div class="container">
-        <h1>Contrasting Images</h1>
+        <h1>Random Images</h1>
         <button onclick="loadImages()">Load Images</button>
         
         <div class="images" id="images">
@@ -87,12 +80,10 @@
                 if (data.success) {
                     document.getElementById('images').innerHTML = `
                         <div class="image-item">
-                            <img src="${data.images[0].url}" alt="${data.images[0].label}">
-                            <div class="label">${data.images[0].label}</div>
+                            <img src="${data.images[0].url}" alt="Random image 1">
                         </div>
                         <div class="image-item">
-                            <img src="${data.images[1].url}" alt="${data.images[1].label}">
-                            <div class="label">${data.images[1].label}</div>
+                            <img src="${data.images[1].url}" alt="Random image 2">
                         </div>
                     `;
                 }
