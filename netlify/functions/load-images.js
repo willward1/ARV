@@ -71,10 +71,9 @@ const getRandomItem = (arr) => arr[Math.floor(Math.random() * arr.length)];
 
 function getThemedImage(query) {
   const theme = themes[query] || { emoji: '❓', color: '6C757D' };
-  // Create a working placeholder URL
-  const text = `${theme.emoji} ${query}`;
+  // Use placehold.co which is very reliable
   return {
-    url: `https://via.placeholder.com/400x400/${theme.color}/ffffff?text=${encodeURIComponent(text)}`,
+    url: `https://placehold.co/400x400/${theme.color}/white?text=${encodeURIComponent(theme.emoji + ' ' + query)}`,
     label: query,
     source: 'themed-emoji'
   };
