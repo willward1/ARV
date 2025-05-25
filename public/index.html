@@ -3,300 +3,103 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Contrasting Images App</title>
+    <title>Contrasting Images</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
+            font-family: Arial, sans-serif;
+            margin: 0;
             padding: 20px;
+            background: #f5f5f5;
         }
-
+        
         .container {
-            max-width: 1200px;
+            max-width: 800px;
             margin: 0 auto;
-            background: white;
-            border-radius: 20px;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
-            overflow: hidden;
-        }
-
-        .header {
-            background: linear-gradient(45deg, #4facfe 0%, #00f2fe 100%);
-            color: white;
-            padding: 30px;
             text-align: center;
         }
-
-        .header h1 {
-            font-size: 2.5rem;
-            margin-bottom: 10px;
-            font-weight: 700;
-        }
-
-        .header p {
-            opacity: 0.9;
-            font-size: 1.1rem;
-        }
-
-        .controls {
-            padding: 30px;
-            text-align: center;
-            background: #f8f9ff;
-            border-bottom: 1px solid #e2e8f0;
-        }
-
-        .btn {
-            background: linear-gradient(45deg, #ff6b6b, #ee5a52);
+        
+        button {
+            background: #007bff;
             color: white;
             border: none;
-            padding: 20px 50px;
-            font-size: 1.2rem;
-            border-radius: 50px;
+            padding: 15px 30px;
+            font-size: 16px;
+            border-radius: 5px;
             cursor: pointer;
-            transition: all 0.3s ease;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            box-shadow: 0 6px 20px rgba(255, 107, 107, 0.4);
+            margin-bottom: 30px;
         }
-
-        .btn:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 10px 30px rgba(255, 107, 107, 0.6);
+        
+        button:hover {
+            background: #0056b3;
         }
-
-        .btn:disabled {
-            background: #ccc;
-            cursor: not-allowed;
-            transform: none;
-            box-shadow: none;
-        }
-
-        .images-container {
+        
+        .images {
             display: flex;
-            min-height: 500px;
-        }
-
-        .image-panel {
-            flex: 1;
-            padding: 30px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
+            gap: 20px;
             justify-content: center;
         }
-
-        .image-panel:first-child {
-            border-right: 3px solid #e2e8f0;
-            background: linear-gradient(135deg, #ffeef8 0%, #f0f4ff 100%);
+        
+        .image-item {
+            text-align: center;
         }
-
-        .image-panel:last-child {
-            background: linear-gradient(135deg, #f0f4ff 0%, #ffeef8 100%);
-        }
-
-        .image-wrapper {
-            width: 100%;
-            max-width: 350px;
-            aspect-ratio: 1;
-            border-radius: 20px;
-            overflow: hidden;
-            box-shadow: 0 15px 35px rgba(0,0,0,0.1);
-            margin-bottom: 20px;
-            transition: transform 0.3s ease;
-        }
-
-        .image-wrapper:hover {
-            transform: scale(1.02);
-        }
-
-        .image-wrapper img {
-            width: 100%;
-            height: 100%;
+        
+        img {
+            width: 300px;
+            height: 300px;
             object-fit: cover;
-            transition: opacity 0.3s ease;
+            border: 2px solid #ddd;
+            border-radius: 8px;
         }
-
-        .image-label {
-            background: linear-gradient(45deg, #667eea, #764ba2);
-            color: white;
-            padding: 12px 24px;
-            border-radius: 25px;
-            font-weight: 600;
+        
+        .label {
+            margin-top: 10px;
+            font-size: 18px;
+            font-weight: bold;
             text-transform: capitalize;
-            font-size: 1.1rem;
-            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
-            text-align: center;
         }
-
-        .status {
-            background: #e6fffa;
-            color: #234e52;
-            padding: 15px;
-            margin: 20px;
-            border-radius: 10px;
-            text-align: center;
-            font-weight: 500;
-        }
-
-        .loading {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            height: 200px;
-            font-size: 1.2rem;
-            color: #667eea;
-        }
-
-        .spinner {
-            width: 40px;
-            height: 40px;
-            border: 4px solid #e2e8f0;
-            border-top: 4px solid #667eea;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin-right: 15px;
-        }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        .placeholder {
-            color: #a0aec0;
-            font-size: 1.2rem;
-            text-align: center;
-        }
-
-        @media (max-width: 768px) {
-            .images-container {
+        
+        @media (max-width: 600px) {
+            .images {
                 flex-direction: column;
-            }
-
-            .image-panel:first-child {
-                border-right: none;
-                border-bottom: 3px solid #e2e8f0;
-            }
-
-            .header h1 {
-                font-size: 2rem;
+                align-items: center;
             }
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <div class="header">
-            <h1>🖼️ Contrasting Images</h1>
-            <p>One button, two perfectly labeled contrasting images</p>
-        </div>
-
-        <div class="controls">
-            <button id="loadBtn" class="btn">Load Contrasting Images</button>
-        </div>
-
-        <div class="status" id="statusDiv">
-            Click the button to load two contrasting labeled images!
-        </div>
-
-        <div class="images-container" id="imagesContainer">
-            <div class="image-panel">
-                <div class="placeholder">First image will appear here</div>
-            </div>
-            <div class="image-panel">
-                <div class="placeholder">Second contrasting image will appear here</div>
+        <h1>Contrasting Images</h1>
+        <button onclick="loadImages()">Load Images</button>
+        
+        <div class="images" id="images">
+            <div class="image-item">
+                <div>Click button to load images</div>
             </div>
         </div>
     </div>
 
     <script>
-        class SimpleImageApp {
-            constructor() {
-                this.loadBtn = document.getElementById('loadBtn');
-                this.statusDiv = document.getElementById('statusDiv');
-                this.imagesContainer = document.getElementById('imagesContainer');
+        async function loadImages() {
+            try {
+                const response = await fetch('/api/load-images');
+                const data = await response.json();
                 
-                this.loadBtn.addEventListener('click', () => this.loadImages());
-            }
-
-            updateStatus(message, isError = false) {
-                this.statusDiv.textContent = message;
-                this.statusDiv.style.background = isError ? '#fed7d7' : '#e6fffa';
-                this.statusDiv.style.color = isError ? '#e53e3e' : '#234e52';
-            }
-
-            showLoading() {
-                this.imagesContainer.innerHTML = `
-                    <div class="image-panel">
-                        <div class="loading">
-                            <div class="spinner"></div>
-                            Loading first image...
+                if (data.success) {
+                    document.getElementById('images').innerHTML = `
+                        <div class="image-item">
+                            <img src="${data.images[0].url}" alt="${data.images[0].label}">
+                            <div class="label">${data.images[0].label}</div>
                         </div>
-                    </div>
-                    <div class="image-panel">
-                        <div class="loading">
-                            <div class="spinner"></div>
-                            Loading second image...
+                        <div class="image-item">
+                            <img src="${data.images[1].url}" alt="${data.images[1].label}">
+                            <div class="label">${data.images[1].label}</div>
                         </div>
-                    </div>
-                `;
-            }
-
-            async loadImages() {
-                this.loadBtn.disabled = true;
-                this.updateStatus('Loading contrasting images...');
-                this.showLoading();
-                
-                try {
-                    const response = await fetch('/api/load-images');
-                    const data = await response.json();
-                    
-                    if (!data.success) {
-                        throw new Error(data.error || 'Failed to load images');
-                    }
-                    
-                    this.displayImages(data.images);
-                    this.updateStatus(`✅ Loaded: ${data.images[0].label} vs ${data.images[1].label} (${data.categories.join(' vs ')})`);
-                } catch (error) {
-                    this.updateStatus('Failed to load images', true);
-                    console.error('Error:', error);
-                } finally {
-                    this.loadBtn.disabled = false;
+                    `;
                 }
-            }
-
-            displayImages(images) {
-                this.imagesContainer.innerHTML = `
-                    <div class="image-panel">
-                        <div class="image-wrapper">
-                            <img src="${images[0].url}" alt="${images[0].label}" 
-                                 onerror="this.onerror=null; this.src='https://placehold.co/400x400/FF6B6B/white?text=${encodeURIComponent(images[0].label)}'">
-                        </div>
-                        <div class="image-label">${images[0].label}</div>
-                    </div>
-                    <div class="image-panel">
-                        <div class="image-wrapper">
-                            <img src="${images[1].url}" alt="${images[1].label}"
-                                 onerror="this.onerror=null; this.src='https://placehold.co/400x400/4ECDC4/white?text=${encodeURIComponent(images[1].label)}'">
-                        </div>
-                        <div class="image-label">${images[1].label}</div>
-                    </div>
-                `;
+            } catch (error) {
+                console.error('Error:', error);
             }
         }
-
-        // Initialize when page loads
-        window.addEventListener('DOMContentLoaded', () => {
-            new SimpleImageApp();
-        });
     </script>
 </body>
 </html>
