@@ -2,6 +2,6 @@
   publish = "public"
 
 [[redirects]]
-  from = "/api/*"
-  to = "/.netlify/functions/:splat"
+  from = "/api/load-images"
+  to = "/.netlify/functions/load-images"
   status = 200
