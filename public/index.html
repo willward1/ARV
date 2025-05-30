@@ -173,16 +173,12 @@
         }
 
         function generateTrulyRandomAssignments() {
-            // Generate truly random assignments for each image
-            const assignments = [];
-            for (let i = 0; i < 2; i++) {
-                // Use crypto.getRandomValues for true randomness
-                const randomArray = new Uint32Array(1);
-                crypto.getRandomValues(randomArray);
-                const isUp = randomArray[0] % 2 === 0;
-                assignments.push(isUp ? 'UP' : 'DOWN');
-            }
-            return assignments;
+            // Generate mutually exclusive assignments (one UP, one DOWN)
+            const randomArray = new Uint32Array(1);
+            crypto.getRandomValues(randomArray);
+            const firstIsUp = randomArray[0] % 2 === 0;
+            
+            return firstIsUp ? ['UP', 'DOWN'] : ['DOWN', 'UP'];
         }
 
         function updateStatus(message, className = '') {
@@ -331,15 +327,11 @@
                 pdf.text('JUDGMENT SECTION', 105, 170, { align: 'center' });
                 
                 pdf.setFontSize(12);
-                pdf.text('Image 1 Direction: ________________', 20, 190);
-                pdf.text('Image 2 Direction: ________________', 20, 205);
-                
-                pdf.text('Confidence Level: ________________', 20, 225);
-                pdf.text('Notes:', 20, 245);
+                pdf.text('Notes:', 20, 195);
                 
                 // Add lines for notes
-                for (let i = 0; i < 5; i++) {
-                    pdf.line(20, 255 + (i * 10), 190, 255 + (i * 10));
+                for (let i = 0; i < 8; i++) {
+                    pdf.line(20, 205 + (i * 10), 190, 205 + (i * 10));
                 }
 
                 return pdf;
