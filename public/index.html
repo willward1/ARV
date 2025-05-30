@@ -148,8 +148,13 @@
         <div class="status" id="status">Click "Start New Session" to begin</div>
         
         <div class="action-buttons">
-            <button onclick="downloadPDF()" id="downloadBtn" disabled>Download PDF</button>
-            <button onclick="printPDF()" id="printBtn" disabled>Print PDF</button>
+            <button onclick="downloadJudgingSheet()" id="judgingBtn" disabled>Download Judging Sheet</button>
+            <button onclick="printJudgingSheet()" id="printJudgingBtn" disabled>Print Judging Sheet</button>
+        </div>
+        
+        <div class="action-buttons">
+            <button onclick="downloadRevealSheet()" id="revealBtn" disabled>Download Reveal Sheet</button>
+            <button onclick="printRevealSheet()" id="printRevealBtn" disabled>Print Reveal Sheet</button>
         </div>
         
         <!-- Hidden container for downloaded images -->
@@ -159,9 +164,25 @@
     <script>
         let currentImages = [];
         let currentSessionNumber = '';
+        let sessionTimestamp = null;
+        let revealTimestamp = null;
+        let imageAssignments = [];
 
         function generateSessionNumber() {
             return Math.floor(100000 + Math.random() * 900000).toString();
+        }
+
+        function generateTrulyRandomAssignments() {
+            // Generate truly random assignments for each image
+            const assignments = [];
+            for (let i = 0; i < 2; i++) {
+                // Use crypto.getRandomValues for true randomness
+                const randomArray = new Uint32Array(1);
+                crypto.getRandomValues(randomArray);
+                const isUp = randomArray[0] % 2 === 0;
+                assignments.push(isUp ? 'UP' : 'DOWN');
+            }
+            return assignments;
         }
 
         function updateStatus(message, className = '') {
@@ -171,15 +192,21 @@
         }
 
         function setButtonsEnabled(enabled) {
-            document.getElementById('downloadBtn').disabled = !enabled;
-            document.getElementById('printBtn').disabled = !enabled;
+            document.getElementById('judgingBtn').disabled = !enabled;
+            document.getElementById('printJudgingBtn').disabled = !enabled;
+            document.getElementById('revealBtn').disabled = !enabled;
+            document.getElementById('printRevealBtn').disabled = !enabled;
             document.getElementById('loadBtn').disabled = !enabled;
         }
 
         async function loadSession() {
             try {
-                // Generate session number immediately
+                // Generate session data immediately
                 currentSessionNumber = generateSessionNumber();
+                sessionTimestamp = new Date();
+                revealTimestamp = new Date(sessionTimestamp.getTime() + 24 * 60 * 60 * 1000); // 24 hours later
+                imageAssignments = generateTrulyRandomAssignments();
+                
                 document.getElementById('sessionNumber').textContent = currentSessionNumber;
                 
                 // Update UI
@@ -246,7 +273,7 @@
             }
         }
 
-        async function generatePDF() {
+        async function generateJudgingSheet() {
             if (currentImages.length < 2) {
                 throw new Error('No images loaded');
             }
@@ -258,17 +285,17 @@
                 format: 'a4'
             });
 
-            // Add title
-            pdf.setFontSize(20);
-            pdf.text(`ARV Session: ${currentSessionNumber}`, 105, 20, { align: 'center' });
+            // Title
+            pdf.setFontSize(24);
+            pdf.text('ARV JUDGING SHEET', 105, 25, { align: 'center' });
             
-            // Add date
-            pdf.setFontSize(12);
-            const date = new Date().toLocaleDateString();
-            pdf.text(`Date: ${date}`, 105, 30, { align: 'center' });
+            // Session info
+            pdf.setFontSize(14);
+            pdf.text(`Session Number: ${currentSessionNumber}`, 105, 40, { align: 'center' });
+            pdf.text(`Date: ${sessionTimestamp.toLocaleDateString()}`, 105, 50, { align: 'center' });
 
+            // Add images
             try {
-                // Get the preloaded images
                 const img1 = document.getElementById('hiddenImg0');
                 const img2 = document.getElementById('hiddenImg1');
 
@@ -276,7 +303,6 @@
                     throw new Error('Images not properly loaded');
                 }
 
-                // Convert images to base64 and add to PDF
                 const canvas = document.createElement('canvas');
                 const ctx = canvas.getContext('2d');
                 
@@ -286,8 +312,9 @@
                 ctx.drawImage(img1, 0, 0);
                 const img1Data = canvas.toDataURL('image/jpeg', 0.8);
                 
-                pdf.text('Image 1:', 20, 50);
-                pdf.addImage(img1Data, 'JPEG', 20, 55, 80, 80);
+                pdf.setFontSize(16);
+                pdf.text('Image 1:', 20, 70);
+                pdf.addImage(img1Data, 'JPEG', 20, 75, 70, 70);
 
                 // Image 2
                 canvas.width = img2.naturalWidth;
@@ -296,39 +323,130 @@
                 ctx.drawImage(img2, 0, 0);
                 const img2Data = canvas.toDataURL('image/jpeg', 0.8);
                 
-                pdf.text('Image 2:', 110, 50);
-                pdf.addImage(img2Data, 'JPEG', 110, 55, 80, 80);
+                pdf.text('Image 2:', 120, 70);
+                pdf.addImage(img2Data, 'JPEG', 120, 75, 70, 70);
 
-                // Add session info at bottom
-                pdf.setFontSize(10);
-                pdf.text(`Session Number: ${currentSessionNumber}`, 20, 280);
-                pdf.text(`Generated: ${new Date().toLocaleString()}`, 20, 285);
+                // Judging section
+                pdf.setFontSize(18);
+                pdf.text('JUDGMENT SECTION', 105, 170, { align: 'center' });
+                
+                pdf.setFontSize(12);
+                pdf.text('Image 1 Direction: ________________', 20, 190);
+                pdf.text('Image 2 Direction: ________________', 20, 205);
+                
+                pdf.text('Confidence Level: ________________', 20, 225);
+                pdf.text('Notes:', 20, 245);
+                
+                // Add lines for notes
+                for (let i = 0; i < 5; i++) {
+                    pdf.line(20, 255 + (i * 10), 190, 255 + (i * 10));
+                }
 
                 return pdf;
             } catch (error) {
-                console.error('Error generating PDF:', error);
-                throw new Error('Failed to generate PDF. Please try loading a new session.');
+                console.error('Error generating judging sheet:', error);
+                throw new Error('Failed to generate judging sheet.');
             }
         }
 
-        async function downloadPDF() {
+        async function generateRevealSheet() {
+            if (currentImages.length < 2) {
+                throw new Error('No images loaded');
+            }
+
+            const { jsPDF } = window.jspdf;
+            const pdf = new jsPDF({
+                orientation: 'portrait',
+                unit: 'mm',
+                format: 'a4'
+            });
+
+            // Title
+            pdf.setFontSize(24);
+            pdf.text('ARV REVEAL SHEET', 105, 25, { align: 'center' });
+            
+            // Session info
+            pdf.setFontSize(14);
+            pdf.text(`Session Number: ${currentSessionNumber}`, 105, 40, { align: 'center' });
+            pdf.text(`Session Date: ${sessionTimestamp.toLocaleString()}`, 105, 50, { align: 'center' });
+            pdf.text(`Reveal Date: ${revealTimestamp.toLocaleString()}`, 105, 60, { align: 'center' });
+
+            // Add images with assignments
             try {
-                updateStatus('Generating PDF...', 'loading');
-                const pdf = await generatePDF();
-                pdf.save(`ARV-Session-${currentSessionNumber}.pdf`);
-                updateStatus('PDF downloaded successfully!', 'ready');
+                const img1 = document.getElementById('hiddenImg0');
+                const img2 = document.getElementById('hiddenImg1');
+
+                if (!img1 || !img2) {
+                    throw new Error('Images not properly loaded');
+                }
+
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                
+                // Image 1
+                canvas.width = img1.naturalWidth;
+                canvas.height = img1.naturalHeight;
+                ctx.drawImage(img1, 0, 0);
+                const img1Data = canvas.toDataURL('image/jpeg', 0.8);
+                
+                pdf.setFontSize(16);
+                pdf.text('Image 1:', 20, 80);
+                pdf.addImage(img1Data, 'JPEG', 20, 85, 70, 70);
+                
+                // Assignment for Image 1
+                pdf.setFontSize(20);
+                pdf.setTextColor(255, 0, 0); // Red color
+                pdf.text(`Direction: ${imageAssignments[0]}`, 20, 165);
+
+                // Image 2
+                canvas.width = img2.naturalWidth;
+                canvas.height = img2.naturalHeight;
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                ctx.drawImage(img2, 0, 0);
+                const img2Data = canvas.toDataURL('image/jpeg', 0.8);
+                
+                pdf.setTextColor(0, 0, 0); // Back to black
+                pdf.setFontSize(16);
+                pdf.text('Image 2:', 120, 80);
+                pdf.addImage(img2Data, 'JPEG', 120, 85, 70, 70);
+                
+                // Assignment for Image 2
+                pdf.setFontSize(20);
+                pdf.setTextColor(255, 0, 0); // Red color
+                pdf.text(`Direction: ${imageAssignments[1]}`, 120, 165);
+
+                // Instructions
+                pdf.setTextColor(0, 0, 0); // Back to black
+                pdf.setFontSize(12);
+                pdf.text('INSTRUCTIONS:', 20, 190);
+                pdf.text('• Do not open this reveal sheet until 24 hours after the session', 20, 205);
+                pdf.text('• Compare your judgments with the actual assignments above', 20, 215);
+                pdf.text('• Record your accuracy for future reference', 20, 225);
+
+                return pdf;
+            } catch (error) {
+                console.error('Error generating reveal sheet:', error);
+                throw new Error('Failed to generate reveal sheet.');
+            }
+        }
+
+        async function downloadJudgingSheet() {
+            try {
+                updateStatus('Generating Judging Sheet...', 'loading');
+                const pdf = await generateJudgingSheet();
+                pdf.save(`ARV-Judging-Sheet-${currentSessionNumber}.pdf`);
+                updateStatus('Judging Sheet downloaded successfully!', 'ready');
             } catch (error) {
                 console.error('Download error:', error);
-                updateStatus('Error generating PDF. Please try again.', 'error');
+                updateStatus('Error generating Judging Sheet. Please try again.', 'error');
             }
         }
 
-        async function printPDF() {
+        async function printJudgingSheet() {
             try {
-                updateStatus('Preparing to print...', 'loading');
-                const pdf = await generatePDF();
+                updateStatus('Preparing Judging Sheet for print...', 'loading');
+                const pdf = await generateJudgingSheet();
                 
-                // Create blob URL and open in new window for printing
                 const blob = pdf.output('blob');
                 const url = URL.createObjectURL(blob);
                 const printWindow = window.open(url);
@@ -341,10 +459,46 @@
                     }, 100);
                 };
                 
-                updateStatus('Print dialog opened', 'ready');
+                updateStatus('Judging Sheet print dialog opened', 'ready');
             } catch (error) {
                 console.error('Print error:', error);
-                updateStatus('Error preparing print. Please try again.', 'error');
+                updateStatus('Error preparing Judging Sheet for print. Please try again.', 'error');
+            }
+        }
+
+        async function downloadRevealSheet() {
+            try {
+                updateStatus('Generating Reveal Sheet...', 'loading');
+                const pdf = await generateRevealSheet();
+                pdf.save(`ARV-Reveal-Sheet-${currentSessionNumber}.pdf`);
+                updateStatus('Reveal Sheet downloaded successfully!', 'ready');
+            } catch (error) {
+                console.error('Download error:', error);
+                updateStatus('Error generating Reveal Sheet. Please try again.', 'error');
+            }
+        }
+
+        async function printRevealSheet() {
+            try {
+                updateStatus('Preparing Reveal Sheet for print...', 'loading');
+                const pdf = await generateRevealSheet();
+                
+                const blob = pdf.output('blob');
+                const url = URL.createObjectURL(blob);
+                const printWindow = window.open(url);
+                
+                printWindow.onload = function() {
+                    printWindow.print();
+                    setTimeout(() => {
+                        printWindow.close();
+                        URL.revokeObjectURL(url);
+                    }, 100);
+                };
+                
+                updateStatus('Reveal Sheet print dialog opened', 'ready');
+            } catch (error) {
+                console.error('Print error:', error);
+                updateStatus('Error preparing Reveal Sheet for print. Please try again.', 'error');
             }
         }
     </script>
