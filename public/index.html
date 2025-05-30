@@ -3,19 +3,64 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Contrasting Images</title>
+    <title>ARV Image Session</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <style>
         body {
             font-family: Arial, sans-serif;
             margin: 0;
             padding: 20px;
-            background: #f5f5f5;
+            background: white;
+            min-height: 100vh;
+            color: #333;
         }
         
         .container {
-            max-width: 800px;
+            max-width: 600px;
             margin: 0 auto;
             text-align: center;
+            background: white;
+            padding: 40px;
+            border-radius: 10px;
+            border: 1px solid #ddd;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        
+        h1 {
+            margin-bottom: 30px;
+            font-size: 2.5em;
+            color: #333;
+        }
+        
+        .session-number {
+            font-size: 4em;
+            font-weight: bold;
+            margin: 30px 0;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            letter-spacing: 8px;
+            border: 2px solid #e9ecef;
+            color: #333;
+        }
+        
+        .status {
+            margin: 20px 0;
+            font-size: 1.2em;
+            min-height: 25px;
+            color: #666;
+        }
+        
+        .loading {
+            color: #007bff;
+        }
+        
+        .ready {
+            color: #28a745;
+        }
+        
+        .error {
+            color: #dc3545;
         }
         
         button {
@@ -26,69 +71,280 @@
             font-size: 16px;
             border-radius: 5px;
             cursor: pointer;
-            margin-bottom: 30px;
+            margin: 10px;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            min-width: 200px;
         }
         
         button:hover {
             background: #0056b3;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
         }
         
-        .images {
+        button:disabled {
+            background: #6c757d;
+            cursor: not-allowed;
+        }
+        
+        .button-group {
+            margin-top: 30px;
+        }
+        
+        .load-button {
+            background: #28a745;
+            font-size: 18px;
+            padding: 20px 40px;
+            margin-bottom: 20px;
+        }
+        
+        .load-button:hover {
+            background: #218838;
+        }
+        
+        .action-buttons {
             display: flex;
-            gap: 20px;
             justify-content: center;
-        }
-        
-        .image-item {
-            text-align: center;
-        }
-        
-        img {
-            width: 300px;
-            height: 300px;
-            object-fit: cover;
-            border: 2px solid #ddd;
-            border-radius: 8px;
+            gap: 20px;
+            flex-wrap: wrap;
         }
         
         @media (max-width: 600px) {
-            .images {
+            .container {
+                margin: 10px;
+                padding: 20px;
+            }
+            
+            .session-number {
+                font-size: 3em;
+                letter-spacing: 4px;
+            }
+            
+            .action-buttons {
                 flex-direction: column;
                 align-items: center;
             }
+            
+            button {
+                min-width: 250px;
+            }
+        }
+        
+        .hidden-images {
+            display: none;
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>Random Images</h1>
-        <button onclick="loadImages()">Load Images</button>
+        <h1>ARV Session</h1>
         
-        <div class="images" id="images">
-            <div class="image-item">
-                <div>Click button to load images</div>
-            </div>
+        <div class="button-group">
+            <button class="load-button" onclick="loadSession()" id="loadBtn">Start New Session</button>
         </div>
+        
+        <div class="session-number" id="sessionNumber">------</div>
+        
+        <div class="status" id="status">Click "Start New Session" to begin</div>
+        
+        <div class="action-buttons">
+            <button onclick="downloadPDF()" id="downloadBtn" disabled>Download PDF</button>
+            <button onclick="printPDF()" id="printBtn" disabled>Print PDF</button>
+        </div>
+        
+        <!-- Hidden container for downloaded images -->
+        <div class="hidden-images" id="hiddenImages"></div>
     </div>
 
     <script>
-        async function loadImages() {
+        let currentImages = [];
+        let currentSessionNumber = '';
+
+        function generateSessionNumber() {
+            return Math.floor(100000 + Math.random() * 900000).toString();
+        }
+
+        function updateStatus(message, className = '') {
+            const statusEl = document.getElementById('status');
+            statusEl.textContent = message;
+            statusEl.className = `status ${className}`;
+        }
+
+        function setButtonsEnabled(enabled) {
+            document.getElementById('downloadBtn').disabled = !enabled;
+            document.getElementById('printBtn').disabled = !enabled;
+            document.getElementById('loadBtn').disabled = !enabled;
+        }
+
+        async function loadSession() {
             try {
+                // Generate session number immediately
+                currentSessionNumber = generateSessionNumber();
+                document.getElementById('sessionNumber').textContent = currentSessionNumber;
+                
+                // Update UI
+                updateStatus('Loading images...', 'loading');
+                setButtonsEnabled(false);
+                
+                // Fetch images from API
                 const response = await fetch('/api/load-images');
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
                 const data = await response.json();
                 
-                if (data.success) {
-                    document.getElementById('images').innerHTML = `
-                        <div class="image-item">
-                            <img src="${data.images[0].url}" alt="Random image 1">
-                        </div>
-                        <div class="image-item">
-                            <img src="${data.images[1].url}" alt="Random image 2">
-                        </div>
-                    `;
+                if (data.success && data.images && data.images.length >= 2) {
+                    // Store images for PDF generation
+                    currentImages = data.images;
+                    
+                    // Preload images to ensure they're downloaded
+                    await preloadImages(currentImages);
+                    
+                    updateStatus('Session ready - Images loaded', 'ready');
+                    setButtonsEnabled(true);
+                    document.getElementById('loadBtn').disabled = false;
+                } else {
+                    throw new Error('Invalid response format or insufficient images');
                 }
+                
             } catch (error) {
-                console.error('Error:', error);
+                console.error('Error loading session:', error);
+                updateStatus('Error loading images. Please try again.', 'error');
+                setButtonsEnabled(false);
+                document.getElementById('loadBtn').disabled = false;
+                currentImages = [];
+            }
+        }
+
+        async function preloadImages(images) {
+            const imagePromises = images.map(imageData => {
+                return new Promise((resolve, reject) => {
+                    const img = new Image();
+                    img.crossOrigin = 'anonymous';
+                    img.onload = () => resolve(img);
+                    img.onerror = reject;
+                    img.src = imageData.url;
+                });
+            });
+            
+            try {
+                const loadedImages = await Promise.all(imagePromises);
+                
+                // Store loaded images in hidden container
+                const hiddenContainer = document.getElementById('hiddenImages');
+                hiddenContainer.innerHTML = '';
+                loadedImages.forEach((img, index) => {
+                    img.id = `hiddenImg${index}`;
+                    hiddenContainer.appendChild(img);
+                });
+                
+                return loadedImages;
+            } catch (error) {
+                console.error('Error preloading images:', error);
+                throw error;
+            }
+        }
+
+        async function generatePDF() {
+            if (currentImages.length < 2) {
+                throw new Error('No images loaded');
+            }
+
+            const { jsPDF } = window.jspdf;
+            const pdf = new jsPDF({
+                orientation: 'portrait',
+                unit: 'mm',
+                format: 'a4'
+            });
+
+            // Add title
+            pdf.setFontSize(20);
+            pdf.text(`ARV Session: ${currentSessionNumber}`, 105, 20, { align: 'center' });
+            
+            // Add date
+            pdf.setFontSize(12);
+            const date = new Date().toLocaleDateString();
+            pdf.text(`Date: ${date}`, 105, 30, { align: 'center' });
+
+            try {
+                // Get the preloaded images
+                const img1 = document.getElementById('hiddenImg0');
+                const img2 = document.getElementById('hiddenImg1');
+
+                if (!img1 || !img2) {
+                    throw new Error('Images not properly loaded');
+                }
+
+                // Convert images to base64 and add to PDF
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                
+                // Image 1
+                canvas.width = img1.naturalWidth;
+                canvas.height = img1.naturalHeight;
+                ctx.drawImage(img1, 0, 0);
+                const img1Data = canvas.toDataURL('image/jpeg', 0.8);
+                
+                pdf.text('Image 1:', 20, 50);
+                pdf.addImage(img1Data, 'JPEG', 20, 55, 80, 80);
+
+                // Image 2
+                canvas.width = img2.naturalWidth;
+                canvas.height = img2.naturalHeight;
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                ctx.drawImage(img2, 0, 0);
+                const img2Data = canvas.toDataURL('image/jpeg', 0.8);
+                
+                pdf.text('Image 2:', 110, 50);
+                pdf.addImage(img2Data, 'JPEG', 110, 55, 80, 80);
+
+                // Add session info at bottom
+                pdf.setFontSize(10);
+                pdf.text(`Session Number: ${currentSessionNumber}`, 20, 280);
+                pdf.text(`Generated: ${new Date().toLocaleString()}`, 20, 285);
+
+                return pdf;
+            } catch (error) {
+                console.error('Error generating PDF:', error);
+                throw new Error('Failed to generate PDF. Please try loading a new session.');
+            }
+        }
+
+        async function downloadPDF() {
+            try {
+                updateStatus('Generating PDF...', 'loading');
+                const pdf = await generatePDF();
+                pdf.save(`ARV-Session-${currentSessionNumber}.pdf`);
+                updateStatus('PDF downloaded successfully!', 'ready');
+            } catch (error) {
+                console.error('Download error:', error);
+                updateStatus('Error generating PDF. Please try again.', 'error');
+            }
+        }
+
+        async function printPDF() {
+            try {
+                updateStatus('Preparing to print...', 'loading');
+                const pdf = await generatePDF();
+                
+                // Create blob URL and open in new window for printing
+                const blob = pdf.output('blob');
+                const url = URL.createObjectURL(blob);
+                const printWindow = window.open(url);
+                
+                printWindow.onload = function() {
+                    printWindow.print();
+                    setTimeout(() => {
+                        printWindow.close();
+                        URL.revokeObjectURL(url);
+                    }, 100);
+                };
+                
+                updateStatus('Print dialog opened', 'ready');
+            } catch (error) {
+                console.error('Print error:', error);
+                updateStatus('Error preparing print. Please try again.', 'error');
             }
         }
     </script>
