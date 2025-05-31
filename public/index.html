@@ -203,6 +203,591 @@
 <body>
     <div class="container">
         <div class="logo-container">
+            <img src="logo.png" alt="ARV Logo" class="logo">
+        </div>
+        <h1>ARV Session</h1>
+        
+        <div class="button-group">
+            <button class="load-button" onclick="loadSession()" id="loadBtn">Start New Session</button>
+        </div>
+        
+        <div class="session-number" id="sessionNumber">------</div>
+        
+        <div class="status" id="status">Click "Start New Session" to begin</div>
+        
+        <div class="action-buttons">
+            <button onclick="downloadJudgingSheet()" id="judgingBtn" disabled>Download Judging Sheet</button>
+            <button onclick="printJudgingSheet()" id="printJudgingBtn" disabled>Print Judging Sheet</button>
+        </div>
+        
+        <div class="action-buttons">
+            <button onclick="downloadRevealSheet()" id="revealBtn" disabled>Download Reveal Sheet</button>
+            <button onclick="printRevealSheet()" id="printRevealBtn" disabled>Print Reveal Sheet</button>
+        </div>
+        
+        <!-- Hidden container for downloaded images -->
+        <div class="hidden-images" id="hiddenImages"></div>
+        
+        <!-- Instructions Section -->
+        <div class="instructions">
+            <p><strong>Instructions</strong></p>
+            <p>1. Click "Start New Session." A new remote viewing session of two contrasting images will be loaded.</p>
+            <p>2. Download / print the Judging Sheet and Reveal Sheets as desired.</p>
+            <p>3. Focus on the 6-digit number and perform your remote viewing session. Record the notes and impressions that come to mind based on the number.</p>
+            <p>4. Look at the Judging Sheet and decide which of the two images is closest to your session.</p>
+            <p>5. Look at the Judging reveal sheet to determine whether "up" or "down" is associated with your choice in Step 4.</p>
+            <p>6. Place your long/short trade and make sure to exit 24 hours later, at least 30 minutes before the end of trading for that day (if applicable).</p>
+            <p>Have fun and don't go broke!</p>
+            <p>🔮</p>
+            <p><strong>More Resources</strong></p>
+            <ul>
+                <li>"<a href="https://www.colorado.edu/faculty/moddel/sites/default/files/attached-files/smith_sse10_abstract.pdf">Stock Market Prediction Using Associative Remote Viewing by Inexperienced Remote Viewers</a>." Smith, C. et al.&nbsp;</li>
+                <li>"<a href="https://acadintuition.com/wp-content/uploads/2018/07/Applications.pdf">Remote viewing as applied to futures studies</a>." Lee, James H.&nbsp;</li>
+                <li>Hal Puthoff on Rogan (<a href="https://www.youtube.com/watch?v=xCklKqPMldA">YouTube</a>)&nbsp;</li>
+                <li>Remote Viewing the Stock Market (<a href="https://www.youtube.com/watch?v=K3x5QHD7Ewo">YouTube</a>)&nbsp;</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        let currentImages = [];
+        let currentSessionNumber = '';
+        let sessionTimestamp = null;
+        let revealTimestamp = null;
+        let imageAssignments = [];
+
+        function generateSessionNumber() {
+            return Math.floor(100000 + Math.random() * 900000).toString();
+        }
+
+        function generateTrulyRandomAssignments() {
+            // Generate mutually exclusive assignments (one UP, one DOWN)
+            const randomArray = new Uint32Array(1);
+            crypto.getRandomValues(randomArray);
+            const firstIsUp = randomArray[0] % 2 === 0;
+            
+            return firstIsUp ? ['UP', 'DOWN'] : ['DOWN', 'UP'];
+        }
+
+        function updateStatus(message, className = '') {
+            const statusEl = document.getElementById('status');
+            statusEl.textContent = message;
+            statusEl.className = `status ${className}`;
+        }
+
+        function setButtonsEnabled(enabled) {
+            document.getElementById('judgingBtn').disabled = !enabled;
+            document.getElementById('printJudgingBtn').disabled = !enabled;
+            document.getElementById('revealBtn').disabled = !enabled;
+            document.getElementById('printRevealBtn').disabled = !enabled;
+            document.getElementById('loadBtn').disabled = !enabled;
+        }
+
+        async function loadSession() {
+            try {
+                // Generate session data immediately
+                currentSessionNumber = generateSessionNumber();
+                sessionTimestamp = new Date();
+                revealTimestamp = new Date(sessionTimestamp.getTime() + 24 * 60 * 60 * 1000); // 24 hours later
+                imageAssignments = generateTrulyRandomAssignments();
+                
+                document.getElementById('sessionNumber').textContent = currentSessionNumber;
+                
+                // Update UI
+                updateStatus('Loading images...', 'loading');
+                setButtonsEnabled(false);
+                
+                // Fetch images from API
+                const response = await fetch('/api/load-images');
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                
+                if (data.success && data.images && data.images.length >= 2) {
+                    // Store images for PDF generation
+                    currentImages = data.images;
+                    
+                    // Preload images to ensure they're downloaded
+                    await preloadImages(currentImages);
+                    
+                    updateStatus('Session ready - Images loaded', 'ready');
+                    setButtonsEnabled(true);
+                    document.getElementById('loadBtn').disabled = false;
+                } else {
+                    throw new Error('Invalid response format or insufficient images');
+                }
+                
+            } catch (error) {
+                console.error('Error loading session:', error);
+                updateStatus('Error loading images. Please try again.', 'error');
+                setButtonsEnabled(false);
+                document.getElementById('loadBtn').disabled = false;
+                currentImages = [];
+            }
+        }
+
+        async function preloadImages(images) {
+            const imagePromises = images.map(imageData => {
+                return new Promise((resolve, reject) => {
+                    const img = new Image();
+                    img.crossOrigin = 'anonymous';
+                    img.onload = () => resolve(img);
+                    img.onerror = reject;
+                    img.src = imageData.url;
+                });
+            });
+            
+            try {
+                const loadedImages = await Promise.all(imagePromises);
+                
+                // Store loaded images in hidden container
+                const hiddenContainer = document.getElementById('hiddenImages');
+                hiddenContainer.innerHTML = '';
+                loadedImages.forEach((img, index) => {
+                    img.id = `hiddenImg${index}`;
+                    hiddenContainer.appendChild(img);
+                });
+                
+                return loadedImages;
+            } catch (error) {
+                console.error('Error preloading images:', error);
+                throw error;
+            }
+        }
+
+        async function generateJudgingSheet() {
+            if (currentImages.length < 2) {
+                throw new Error('No images loaded');
+            }
+
+            const { jsPDF } = window.jspdf;
+            const pdf = new jsPDF({
+                orientation: 'portrait',
+                unit: 'mm',
+                format: 'a4'
+            });
+
+            // Title
+            pdf.setFontSize(24);
+            pdf.text('ARV JUDGING SHEET', 105, 25, { align: 'center' });
+            
+            // Session info
+            pdf.setFontSize(14);
+            pdf.text(`Session Number: ${currentSessionNumber}`, 105, 40, { align: 'center' });
+            pdf.text(`Date: ${sessionTimestamp.toLocaleDateString()}`, 105, 50, { align: 'center' });
+
+            // Add images
+            try {
+                const img1 = document.getElementById('hiddenImg0');
+                const img2 = document.getElementById('hiddenImg1');
+
+                if (!img1 || !img2) {
+                    throw new Error('Images not properly loaded');
+                }
+
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                
+                // Image 1
+                canvas.width = img1.naturalWidth;
+                canvas.height = img1.naturalHeight;
+                ctx.drawImage(img1, 0, 0);
+                const img1Data = canvas.toDataURL('image/jpeg', 0.8);
+                
+                pdf.setFontSize(16);
+                pdf.text('Image 1:', 20, 70);
+                pdf.addImage(img1Data, 'JPEG', 20, 75, 70, 70);
+
+                // Image 2
+                canvas.width = img2.naturalWidth;
+                canvas.height = img2.naturalHeight;
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                ctx.drawImage(img2, 0, 0);
+                const img2Data = canvas.toDataURL('image/jpeg', 0.8);
+                
+                pdf.text('Image 2:', 120, 70);
+                pdf.addImage(img2Data, 'JPEG', 120, 75, 70, 70);
+
+                // Judging section
+                pdf.setFontSize(18);
+                pdf.text('JUDGMENT SECTION', 105, 170, { align: 'center' });
+                
+                pdf.setFontSize(12);
+                pdf.text('Notes:', 20, 195);
+                
+                // Add lines for notes
+                for (let i = 0; i < 8; i++) {
+                    pdf.line(20, 205 + (i * 10), 190, 205 + (i * 10));
+                }
+
+                return pdf;
+            } catch (error) {
+                console.error('Error generating judging sheet:', error);
+                throw new Error('Failed to generate judging sheet.');
+            }
+        }
+
+        async function generateRevealSheet() {
+            if (currentImages.length < 2) {
+                throw new Error('No images loaded');
+            }
+
+            const { jsPDF } = window.jspdf;
+            const pdf = new jsPDF({
+                orientation: 'portrait',
+                unit: 'mm',
+                format: 'a4'
+            });
+
+            // Title
+            pdf.setFontSize(24);
+            pdf.text('ARV REVEAL SHEET', 105, 25, { align: 'center' });
+            
+            // Session info
+            pdf.setFontSize(14);
+            pdf.text(`Session Number: ${currentSessionNumber}`, 105, 40, { align: 'center' });
+            pdf.text(`Session Date: ${sessionTimestamp.toLocaleString()}`, 105, 50, { align: 'center' });
+            pdf.text(`Reveal Date: ${revealTimestamp.toLocaleString()}`, 105, 60, { align: 'center' });
+
+            // Add images with assignments
+            try {
+                const img1 = document.getElementById('hiddenImg0');
+                const img2 = document.getElementById('hiddenImg1');
+
+                if (!img1 || !img2) {
+                    throw new Error('Images not properly loaded');
+                }
+
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                
+                // Image 1
+                canvas.width = img1.naturalWidth;
+                canvas.height = img1.naturalHeight;
+                ctx.drawImage(img1, 0, 0);
+                const img1Data = canvas.toDataURL('image/jpeg', 0.8);
+                
+                pdf.setFontSize(16);
+                pdf.text('Image 1:', 20, 80);
+                pdf.addImage(img1Data, 'JPEG', 20, 85, 70, 70);
+                
+                // Assignment for Image 1
+                pdf.setFontSize(20);
+                pdf.setTextColor(255, 0, 0); // Red color
+                pdf.text(`Direction: ${imageAssignments[0]}`, 20, 165);
+
+                // Image 2
+                canvas.width = img2.naturalWidth;
+                canvas.height = img2.naturalHeight;
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                ctx.drawImage(img2, 0, 0);
+                const img2Data = canvas.toDataURL('image/jpeg', 0.8);
+                
+                pdf.setTextColor(0, 0, 0); // Back to black
+                pdf.setFontSize(16);
+                pdf.text('Image 2:', 120, 80);
+                pdf.addImage(img2Data, 'JPEG', 120, 85, 70, 70);
+                
+                // Assignment for Image 2
+                pdf.setFontSize(20);
+                pdf.setTextColor(255, 0, 0); // Red color
+                pdf.text(`Direction: ${imageAssignments[1]}`, 120, 165);
+
+                // Instructions
+                pdf.setTextColor(0, 0, 0); // Back to black
+                pdf.setFontSize(12);
+                pdf.text('INSTRUCTIONS:', 20, 190);
+                pdf.text('• Do not open this reveal sheet until 24 hours after the session', 20, 205);
+                pdf.text('• Compare your judgments with the actual assignments above', 20, 215);
+                pdf.text('• Record your accuracy for future reference', 20, 225);
+
+                return pdf;
+            } catch (error) {
+                console.error('Error generating reveal sheet:', error);
+                throw new Error('Failed to generate reveal sheet.');
+            }
+        }
+
+        async function downloadJudgingSheet() {
+            try {
+                updateStatus('Generating Judging Sheet...', 'loading');
+                const pdf = await generateJudgingSheet();
+                pdf.save(`ARV-Judging-Sheet-${currentSessionNumber}.pdf`);
+                updateStatus('Judging Sheet downloaded successfully!', 'ready');
+            } catch (error) {
+                console.error('Download error:', error);
+                updateStatus('Error generating Judging Sheet. Please try again.', 'error');
+            }
+        }
+
+        async function printJudgingSheet() {
+            try {
+                updateStatus('Preparing Judging Sheet for print...', 'loading');
+                const pdf = await generateJudgingSheet();
+                
+                const blob = pdf.output('blob');
+                const url = URL.createObjectURL(blob);
+                const printWindow = window.open(url);
+                
+                printWindow.onload = function() {
+                    printWindow.print();
+                    setTimeout(() => {
+                        printWindow.close();
+                        URL.revokeObjectURL(url);
+                    }, 100);
+                };
+                
+                updateStatus('Judging Sheet print dialog opened', 'ready');
+            } catch (error) {
+                console.error('Print error:', error);
+                updateStatus('Error preparing Judging Sheet for print. Please try again.', 'error');
+            }
+        }
+
+        async function downloadRevealSheet() {
+            try {
+                updateStatus('Generating Reveal Sheet...', 'loading');
+                const pdf = await generateRevealSheet();
+                pdf.save(`ARV-Reveal-Sheet-${currentSessionNumber}.pdf`);
+                updateStatus('Reveal Sheet downloaded successfully!', 'ready');
+            } catch (error) {
+                console.error('Download error:', error);
+                updateStatus('Error generating Reveal Sheet. Please try again.', 'error');
+            }
+        }
+
+        async function printRevealSheet() {
+            try {
+                updateStatus('Preparing Reveal Sheet for print...', 'loading');
+                const pdf = await generateRevealSheet();
+                
+                const blob = pdf.output('blob');
+                const url = URL.createObjectURL(blob);
+                const printWindow = window.open(url);
+                
+                printWindow.onload = function() {
+                    printWindow.print();
+                    setTimeout(() => {
+                        printWindow.close();
+                        URL.revokeObjectURL(url);
+                    }, 100);
+                };
+                
+                updateStatus('Reveal Sheet print dialog opened', 'ready');
+            } catch (error) {
+                console.error('Print error:', error);
+                updateStatus('Error preparing Reveal Sheet for print. Please try again.', 'error');
+            }
+        }
+    </script>
+</body>
+</html><!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ARV Image Session</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: #1a1a1a;
+            min-height: 100vh;
+            color: #e0e0e0;
+        }
+        
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            text-align: center;
+            background: #2d2d2d;
+            padding: 40px;
+            border-radius: 15px;
+            border: 1px solid #404040;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+        }
+        
+        h1 {
+            margin-bottom: 30px;
+            font-size: 2.5em;
+            color: #ffffff;
+        }
+        
+        .logo-container {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        
+        .logo {
+            max-width: 200px;
+            max-height: 100px;
+            width: auto;
+            height: auto;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+        }
+        
+        .session-number {
+            font-size: 4em;
+            font-weight: bold;
+            margin: 30px 0;
+            padding: 20px;
+            background: #3a3a3a;
+            border-radius: 15px;
+            letter-spacing: 8px;
+            border: 2px solid #555555;
+            color: #ffffff;
+            text-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
+        }
+        
+        .status {
+            margin: 20px 0;
+            font-size: 1.2em;
+            min-height: 25px;
+            color: #b0b0b0;
+        }
+        
+        .loading {
+            color: #4fc3f7;
+        }
+        
+        .ready {
+            color: #66bb6a;
+        }
+        
+        .error {
+            color: #ef5350;
+        }
+        
+        button {
+            background: #0d7377;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            margin: 10px;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            min-width: 200px;
+        }
+        
+        button:hover {
+            background: #14a085;
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+            transform: translateY(-2px);
+        }
+        
+        button:disabled {
+            background: #404040;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .button-group {
+            margin-top: 30px;
+        }
+        
+        .load-button {
+            background: #2e7d32;
+            font-size: 18px;
+            padding: 20px 40px;
+            margin-bottom: 20px;
+        }
+        
+        .load-button:hover {
+            background: #388e3c;
+        }
+        
+        .action-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+        
+        @media (max-width: 600px) {
+            .container {
+                margin: 10px;
+                padding: 20px;
+            }
+            
+            .session-number {
+                font-size: 3em;
+                letter-spacing: 4px;
+            }
+            
+            .action-buttons {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            button {
+                min-width: 250px;
+            }
+        }
+        
+        .hidden-images {
+            display: none;
+        }
+        
+        .instructions {
+            margin-top: 50px;
+            padding: 30px;
+            background: #353535;
+            border-radius: 15px;
+            border: 1px solid #555555;
+            text-align: left;
+            max-width: 800px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        
+        .instructions h3 {
+            margin-top: 0;
+            color: #ffffff;
+            font-size: 1.2em;
+        }
+        
+        .instructions p {
+            margin: 10px 0;
+            line-height: 1.5;
+            color: #d0d0d0;
+        }
+        
+        .instructions ol {
+            padding-left: 20px;
+        }
+        
+        .instructions li {
+            margin: 8px 0;
+            line-height: 1.5;
+            color: #d0d0d0;
+        }
+        
+        .instructions ul {
+            padding-left: 20px;
+        }
+        
+        .instructions a {
+            color: #64b5f6;
+            text-decoration: none;
+        }
+        
+        .instructions a:hover {
+            color: #90caf9;
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="logo-container">
             <img src="data:image/avif;base64,AAAAIGZ0eXBhdmlmAAAAAGF2aWZtaWYxbWlhZgAAAOdtZXRhAAAAAAAAACFoZGxyAAAAAAAAAABwaWN0AAAAAAAAAAAAAAAAAAAAAAAAC2libGF2aWZxZXBpdG4AAAAA/G1kYXQKXGbrzZA2JydUQEFLy5HG0YY2UP8XVJBHdcYlI9e46UjFD4kiqZvL/UFFJVJlFc9hW0W8c2xASO9JJzL9FOaLS8aKKzotcF8m2EtqhStF/F9ZdHf7yZKfyeYZdZkiZf6d8q4r/b6EOAA==" alt="ARV Logo" class="logo">
         </div>
         <h1>ARV Session</h1>
